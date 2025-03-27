@@ -1,0 +1,11 @@
+AWS EC2 setup
+
+aws configure
+
+https://docs.getdbt.com/docs/core/connect-data-platform/redshift-setup
+python -m pip install dbt-core dbt-redshift
+
+mkdir dbt_lab
+python3 -m venv .env
+
+dbt init
