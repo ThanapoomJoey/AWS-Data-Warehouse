@@ -1,0 +1,11 @@
+version: 1
+sources:
+  - name: supermarket
+    schema: supermarket
+    tables:
+    - name: supermarket_branches
+    - name: supermarket_categories
+    - name: supermarket_customers
+    - name: supermarket_locations
+    - name: supermarket_products
+    - name: supermarket_sales
