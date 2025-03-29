@@ -1,7 +1,7 @@
 version: 1
 sources:
   - name: supermarket
-    schema: supermarket_seed
+    schema: supermarket
     tables:
     - name: supermarket_branches
     - name: supermarket_categories

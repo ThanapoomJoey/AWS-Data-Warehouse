@@ -1,4 +1,4 @@
-## S3 Setup for data warehouse
+## S3 Setup
 
 - Step1 : Create_bucket
 ![Create_bucket](1_Create_bucket.png)

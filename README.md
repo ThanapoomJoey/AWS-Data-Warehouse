@@ -10,3 +10,13 @@ This project sets up a data warehouse system on the AWS cloud using simulated su
 - **Redshift**: A fully managed data warehouse service for storing and querying data
 - **IAM**: Manages permissions and access control for AWS resources
 - **QuickSight**: A BI tool for visualizing data and generating reports
+
+## Setup
+
+- EC2 Setup : [AWS-EC2-Setup.md](AWS-EC2-Setup/AWS-EC2-Setup.md)
+
+- IAM User Access Keys Setup : [AWS-IAM-User-Access-keys-Setup.md](AWS-IAM-User-Access-keys-Setup/AWS-IAM-User-Access-keys-Setup.md)
+
+- Redshift Setup : [AWS-Redshift-Setup.md](AWS-Redshift-Setup/AWS-Redshift-Setup.md)
+
+- S3 Setup : [S3_setup.md](import_data_to_s3/S3_setup_images/S3_setup.md)
