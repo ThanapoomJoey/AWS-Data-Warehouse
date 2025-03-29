@@ -13,10 +13,10 @@ This project sets up a data warehouse system on the AWS cloud using simulated su
 
 ## Setup
 
-- EC2 Setup : [AWS-EC2-Setup.md](AWS-EC2-Setup/AWS-EC2-Setup.md)
+- **EC2 Setup** : [AWS-EC2-Setup.md](AWS-EC2-Setup/AWS-EC2-Setup.md)
 
-- IAM User Access Keys Setup : [AWS-IAM-User-Access-keys-Setup.md](AWS-IAM-User-Access-keys-Setup/AWS-IAM-User-Access-keys-Setup.md)
+- **IAM User Access Keys Setup** : [AWS-IAM-User-Access-keys-Setup.md](AWS-IAM-User-Access-keys-Setup/AWS-IAM-User-Access-keys-Setup.md)
 
-- Redshift Setup : [AWS-Redshift-Setup.md](AWS-Redshift-Setup/AWS-Redshift-Setup.md)
+- **Redshift Setup** : [AWS-Redshift-Setup.md](AWS-Redshift-Setup/AWS-Redshift-Setup.md)
 
-- S3 Setup : [S3_setup.md](import_data_to_s3/S3_setup_images/S3_setup.md)
+- **S3 Setup** : [S3_setup.md](import_data_to_s3/S3_setup_images/S3_setup.md)
