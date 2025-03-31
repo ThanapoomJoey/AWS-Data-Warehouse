@@ -1,0 +1,11 @@
+exposures:
+  - name: Executive Dashboard
+    type: dashboard
+    url: 
+    description: 
+    depends_on:
+      - ref('supermarket_view_sales_report')
+
+    owner:
+      name: Thanapoom Tongplengsri
+      email: thanapoom.t@hotmail.com
