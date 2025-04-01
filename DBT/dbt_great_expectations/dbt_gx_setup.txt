@@ -1,0 +1,8 @@
+https://github.com/calogica/dbt-expectations/tree/0.8.5
+
+dbt_project.yml
+ --vars:
+  'dbt_date:time_zone': 'Asia/Bangkok'
+
+install dbt GX
+dbt deps

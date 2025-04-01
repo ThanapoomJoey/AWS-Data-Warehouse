@@ -1,0 +1,105 @@
+version: 2
+
+sources:
+  - name: supermarket_serving
+    tables:
+      - name: supermarket_view_dim_branches
+        columns:
+          - name: branch_id
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_unique
+
+      - name: supermarket_view_dim_customers
+        columns:
+          - name: customer_id
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_unique
+          - name: email
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_unique
+              - dbt_expectations.expect_column_values_to_match_regex:
+                  regex: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+          - name: phone
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_match_regex:
+                  regex: "^[0-9]{3}-[0-9]{3}-[0-9]{4}$"
+              - dbt_expectations.expect_column_value_lengths_to_equal:
+                  value: 12
+
+      - name: supermarket_view_dim_products
+        columns:
+          - name: product_id
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_unique
+
+      - name: supermarket_view_fact_sales
+        columns: 
+          - name: s.sale_id
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_unique
+
+      - name: supermarket_view_sales_report
+        columns:
+          - name: sale_id
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_unique
+              - dbt_expectations.expect_column_value_lengths_to_equal:
+                  value: 10
+              - dbt_expectations.expect_column_values_to_match_regex:
+                  regex: "^SALE[0-9]{6}$"
+
+          - name: customer_id
+            tests:
+              - dbt_expectations.expect_column_value_lengths_to_equal:
+                  value: 7
+              - dbt_expectations.expect_column_values_to_match_regex:
+                  regex: "^CUST[0-9]{3}$"
+
+          - name: product_id
+            tests:
+              - dbt_expectations.expect_column_value_lengths_to_equal:
+                  value: 7
+              - dbt_expectations.expect_column_values_to_match_regex:
+                  regex: "^PROD[0-9]{3}$"
+
+          - name: branch_id
+            tests:
+              - dbt_expectations.expect_column_value_lengths_to_equal:
+                  value: 5
+              - dbt_expectations.expect_column_values_to_match_regex:
+                  regex: "^BR[0-9]{3}$"
+
+          - name: sale_date
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: "'2025-01-01'"
+                  max_value: "'2025-12-31'"
+
+          - name: quantity
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 1
+                  max_value: 1000
+
+          - name: unit_price
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 0.01
+                  max_value: 10000
+
+          - name: total_amount
+            tests:
+              - dbt_expectations.expect_column_values_to_not_be_null
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 0.01
+                  max_value: 100000
