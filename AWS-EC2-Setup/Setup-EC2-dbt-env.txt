@@ -10,3 +10,26 @@ python3 -m venv .env
 
 dbt init
 
+https://github.com/calogica/dbt-expectations/tree/0.8.5
+
+dbt_project.yml
+ --vars:
+  'dbt_date:time_zone': 'Asia/Bangkok'
+
+dbt deps ###install dbt GX
+
+pip install apache-airflow
+
+mkdir airflow
+airflow db init
+
+airflow users create \
+    --username admin \
+    --firstname Thanapoom \
+    --lastname Tongplengsri \
+    --role Admin \
+    --email thanapoom.t@hotmail.com
+
+airflow webserver --port 8080 --hostname 0.0.0.0
+
+airflow scheduler

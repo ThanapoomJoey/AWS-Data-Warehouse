@@ -4,5 +4,4 @@ dbt_project.yml
  --vars:
   'dbt_date:time_zone': 'Asia/Bangkok'
 
-install dbt GX
-dbt deps
+dbt deps ###install dbt GX

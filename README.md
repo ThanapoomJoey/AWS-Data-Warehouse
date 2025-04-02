@@ -213,7 +213,7 @@ Run the AWS CLI configuration to set up credentials and access permissions
      ![redshift_view](DBT/dbt_models/dbt_serving/dbt_serving_images/3_redshift_view.png)
 
    ### **QuickSight Dashboard Report**
-    This dashboard is built using **Amazon QuickSight** to display sales data from the dbt model in the `serving` schema. It focuses on sales insights for **March** and includes the following components:
+    This dashboard is built using **Amazon QuickSight** and connects to Amazon Redshift to display sales data from the `supermarket_view_sales_report` view in the `supermarket_serving` schema. It focuses on sales insights for **March** and includes the following components:
 
     ![QuickSight Dashboard](DBT/dbt_models/dbt_serving/dbt_serving_images/4_quicksight_dashboard.png)
 
@@ -274,6 +274,73 @@ In this step, we use dbt-expectations to ensure data quality in our supermarket 
 
 In real projects, we can apply data quality checks at every step for better data reliability
 
+### Step 6: Automate DBT Pipeline with Airflow
+This step guides you through setting up and running a DBT pipeline using Apache Airflow
+
+- Complete the Airflow setup from [Airflow_setup.md](AIRFLOW/Airflow_setup.md)
+
+- Create a DAG file at the path `/home/ec2-user/airflow/dags` 
+- Use the example file: [supermarket_dbt_dag.py](AIRFLOW/supermarket_dbt_dag.py)
+- Example DAG content (runs at 7:00 AM Thailand time):
+  ```python
+    import pendulum
+    from airflow import DAG
+    from airflow.operators.bash import BashOperator
+
+    with DAG(
+        dag_id="My_DBT_Pipeline",
+        #schedule="@daily"
+        schedule="0 0 * * *",
+        start_date=pendulum.datetime(2025, 1, 1, tz="Asia/Bangkok"),
+        catchup=False,
+        tags=["Sales_Report"]
+    ) as dag:
+    
+        step_1 = BashOperator(
+            task_id="dbt_seed",
+            bash_command="/home/ec2-user/dbt_lab/.env/bin/dbt seed --project-dir /home/ec2-user/dbt_lab/dbt_supermarket_project",
+        )
+        step_2 = BashOperator(
+            task_id="dbt_run",
+            bash_command="/home/ec2-user/dbt_lab/.env/bin/dbt run --project-dir /home/ec2-user/dbt_lab/dbt_supermarket_project",
+        )
+        step_3 = BashOperator(
+            task_id="dbt_test",
+            bash_command="/home/ec2-user/dbt_lab/.env/bin/dbt test --project-dir /home/ec2-user/dbt_lab/dbt_supermarket_project",
+            
+        )
+
+        step_1 >> step_2 >> step_3
+   ```
+
+- Start the Airflow Webserver
+  ```bash
+  airflow webserver --port 8080 --hostname 0.0.0.0
+   ```
+  ![airflow_webserver](AIRFLOW/Airflow_setup_images/2_airflow_webserver.png)
+
+- Start the Airflow Scheduler
+- Open a new terminal window and run the scheduler to manage workflows:
+   ```bash
+   airflow scheduler
+    ```
+ - Run the webserver (Step 2) and scheduler (Step 3) in different terminal windows at the same time
+  ![airflow_scheduler](AIRFLOW/Airflow_setup_images/1_airflow_scheduler.png)
+
+- Access the Airflow Web UI 
+- Open your browser and go to: http://your-ec2-public-ip:8080
+  ![airflow_web_ui](AIRFLOW/Airflow_setup_images/3_airflow_web_ui.png)
+
+- Run the DAG
+  ![run_dag](AIRFLOW/Airflow_dags_images/1_run_dag.png)
+
+- Check Task Results in Logs
+  - DBT Seed Log
+  ![airflow_dbt_seed_log](AIRFLOW/Airflow_dags_images/2_airflow_dbt_seed_log.png)
+  - DBT Run Log
+  ![airflow_dbt_run_log](AIRFLOW/Airflow_dags_images/3_airflow_dbt_run_log.png)
+  - DBT Test Log
+  ![airflow_dbt_test_log](AIRFLOW/Airflow_dags_images/4_airflow_dbt_test_log.png)
 
 
 
