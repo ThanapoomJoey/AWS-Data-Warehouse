@@ -1,15 +1,27 @@
 # AWS Data Warehouse Project
 
-This project sets up a data warehouse system on the AWS cloud using simulated supermarket data. The primary database is Amazon Redshift, and DBT is used for data transformation and management. The goal is to create an efficient, scalable, and manageable data pipeline for processing and analyzing supermarket data
+This project builds a data warehouse system on AWS to handle and analyze simulated supermarket sales data. It uses Amazon Redshift as the main database and DBT to transform the data. The goal is to create a fast, flexible, and reliable data pipeline that helps businesses make better decisions by processing sales data efficiently. The system updates automatically every day and displays insights through QuickSight dashboards, making it easy to track sales trends and performance
 
 ## Tools and Services
-- **DBT**: Handles data transformation and modeling within the warehouse
-- **DBT-GreatExpectations**: Integrates data quality checks and validation with DBT
-- **Airflow**: Manages and schedules the ETL workflows
-- **AWS EC2**: Provides compute resources to run Airflow and other processes
-- **Redshift**: A fully managed data warehouse service for storing and querying data
-- **IAM**: Manages permissions and access control for AWS resources
-- **QuickSight**: A BI tool for visualizing data and generating reports
+- **DBT**: Handles data transformation and modeling
+- **DBT-GreatExpectations**: Adds data validation and quality checks
+- **S3**: Cloud storage for raw and processed data
+- **Airflow**: Orchestrates ETL workflows
+- **AWS EC2**: Provides compute resources for running Airflow and dbt
+- **Redshift**: Fully managed data warehouse for storing and querying data
+- **IAM**: Manages permissions and security
+- **QuickSight**: BI tool for dashboards and visual analytics
+- **Languages**:
+  - Python: For automation and scripting
+  - SQL: For querying and data manipulation
+- **Libraries**:
+  - Boto3: AWS service interactions in Python
+
+## AWS Data Warehouse Architecture Overview
+![AWS_workflow](Summary/AWS_workflow.png)
+
+## ER Diagram
+![ER-Diagram](Summary/ER-Diagram.png)
 
 ## Setup
 
@@ -106,7 +118,7 @@ Run the AWS CLI configuration to set up credentials and access permissions
     ```
  - Example sources.yml file:
    ```sql
-    version: 1
+    version: 2
     sources:
       - name: supermarket
         schema: supermarket
@@ -215,7 +227,7 @@ Run the AWS CLI configuration to set up credentials and access permissions
    ### **QuickSight Dashboard Report**
     This dashboard is built using **Amazon QuickSight** and connects to Amazon Redshift to display sales data from the `supermarket_view_sales_report` view in the `supermarket_serving` schema. It focuses on sales insights for **March** and includes the following components:
 
-    ![QuickSight Dashboard](DBT/dbt_models/dbt_serving/dbt_serving_images/4_quicksight_dashboard.png)
+    ![Quicksight_dashboard](Summary/Quicksight_dashboard.png)
 
     #### Dashboard Components
 
@@ -342,8 +354,130 @@ This step guides you through setting up and running a DBT pipeline using Apache 
   - DBT Test Log
   ![airflow_dbt_test_log](AIRFLOW/Airflow_dags_images/4_airflow_dbt_test_log.png)
 
+### Step 7: Automate Daily Updates with Airflow
+In this step, we use Apache Airflow to automate daily updates for the Redshift data warehouse. A Python script loads new CSV data from S3 into Redshift using the SQL COPY command via Boto3. Then, Airflow runs DBT to update the raw and serving models automatically. This simulates a real-world scenario where new supermarket sales data is uploaded to S3 every day
+
+- Daily S3 File Upload
+![add_file_s3](AIRFLOW/Airflow_daily_update_images/0_add_file_s3.png)
+- Add permissions to let the EC2 instance connect to Redshift and read files from S3 using the Python script and Airflow
+![add_permission](AIRFLOW/Airflow_daily_update_images/1_add_permission.png)
+
+- Create Python Script for Daily Updates
+  - File : [daily_supermarket_sales_update.py](DBT/dbt_models/dbt_raw/daily_supermarket_sales_update.py) 
+  - Path : `/home/ec2-user/dbt_lab/dbt_supermarket_project/seeds`
+  ![create_daily_supermarket_sales_update](AIRFLOW/Airflow_daily_update_images/2_create_daily_supermarket_sales_update.png)
+    
+    ```bash
+    import boto3
+    import psycopg2
+    from datetime import datetime
 
 
+    s3_client = boto3.client('s3')
+
+    data_today = datetime.today().strftime('%Y%m%d')
+
+    response = s3_client.list_objects_v2(
+        Bucket='data-warehouse-project-supermarket',
+        Prefix=f"csv_supermarket/{data_today}/"
+    )
+
+    csv_files = [obj['Key'] for obj in response['Contents'] if obj['Key'].lower().endswith('.csv')]
+
+    print("CSV files found:", csv_files)
+
+    redshift_client = boto3.client('redshift')
+    response = redshift_client.get_cluster_credentials(
+        DbUser='awsuser', 
+        DbName='supermarket',
+        ClusterIdentifier='data-warehouse-project',
+        AutoCreate=False
+    )
+
+
+    redshift_conn = psycopg2.connect(
+        dbname='supermarket',
+        host='data-warehouse-project.cn7cimzrfkqf.ap-southeast-1.redshift.amazonaws.com',
+        port=5439,
+        user=response['DbUser'],
+        password=response['DbPassword']
+    )
+
+    cursor = redshift_conn.cursor()
+
+
+    iam_role = 'arn:aws:iam::302263044480:role/service-role/AmazonRedshift-CommandsAccessRole-20250224T143611'
+
+    for csv_file in csv_files:
+        s3_path = f"s3://data-warehouse-project-supermarket/{csv_file}"
+        copy_query = f"""
+        COPY supermarket.supermarket_sales
+        FROM '{s3_path}'
+        IAM_ROLE '{iam_role}'
+        CSV
+        IGNOREHEADER 1;
+        """
+        print(f"Loading {csv_file} into Redshift...")
+        cursor.execute(copy_query)
+        redshift_conn.commit()
+        print(f"Loaded {csv_file} successfully")
+
+    cursor.close()
+    redshift_conn.close()
+     ```
+
+- Create Airflow DAG
+  - File : [daily_supermarket_sales_update_dag](AIRFLOW/daily_supermarket_sales_update_dag.py) 
+  - Path : `/home/ec2-user/airflow/dags`
+  ![create_daily_supermarket_sales_update_dag](AIRFLOW/Airflow_daily_update_images/3_create_daily_supermarket_sales_update_dag.png)
+  - Purpose : This DAG runs the Python script to load new data, then updates DBT raw and serving models daily
+
+    ```bash
+    import pendulum
+    from airflow import DAG
+    from airflow.operators.bash import BashOperator
+
+    with DAG(
+        dag_id="daily_supermarket_sales_update",
+        #schedule="@daily"
+        schedule="0 0 * * *",
+        start_date=pendulum.datetime(2025, 1, 1, tz="Asia/Bangkok"),
+        catchup=False,
+        tags=["daily_supermarket_sales_update"]
+    ) as dag:
+        
+        step_1 = BashOperator(
+            task_id="run_daily_supermarket_sales_update",
+            bash_command="/home/ec2-user/dbt_lab/.env/bin/python /home/ec2-user/dbt_lab/dbt_supermarket_project/seeds/daily_supermarket_sales_update.py",
+        )
+        step_2 = BashOperator(
+            task_id="dbt_run",
+            bash_command="/home/ec2-user/dbt_lab/.env/bin/dbt run --project-dir /home/ec2-user/dbt_lab/dbt_supermarket_project",
+        )
+        step_3 = BashOperator(
+            task_id="dbt_test",
+            bash_command="/home/ec2-user/dbt_lab/.env/bin/dbt test --project-dir /home/ec2-user/dbt_lab/dbt_supermarket_project",
+            
+        )
+
+        step_1 >> step_2 >> step_3
+     ```
+
+- Run the DAG
+![dag_success](AIRFLOW/Airflow_daily_update_images/4_dag_success.png)
+
+- Before Update : Data in Redshift before adding new daily CSV
+![before_update_data](AIRFLOW/Airflow_daily_update_images/5_before_update_data.png)
+
+- After Update: Data in Redshift after loading new CSV, with the serving model `supermarket_view_sales_report` updated automatically
+![after_update_supermarket_sales](AIRFLOW/Airflow_daily_update_images/6_after_update_supermarket_sales.png)
+
+- Incremental Loading Note
+This setup ensures `incremental` updates by loading only new CSV files from S3 each day, avoiding full reloads of old data. The `COPY` command appends new rows to the existing Redshift table, and DBT updates the models based on this appended data
+
+### Final Takeaway
+
+This project demonstrates how to build an efficient, automated data warehouse on AWS using Redshift, DBT, and Airflow. By integrating S3 for storage, dbt for data transformation, and QuickSight for visualization, businesses can gain valuable insights from their sales data. The use of dbt-expectations ensures data quality, while the dbt web interface provides clear documentation and model lineage. With this setup, organizations can streamline their data workflows, improve decision-making, and scale analytics with ease
 
 
 
